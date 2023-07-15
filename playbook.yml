@@ -1,0 +1,138 @@
+- name: ping
+  hosts: i1
+  tasks:
+    - name: print hw/os info
+      tags: [never, info]
+      block:
+        - name: print os info
+          command: uname --all
+          register: ret
+        - name: print os info
+          debug:
+            msg: "{{ ret.stdout_lines }}"
+        - name: get cpu info
+          command: lscpu
+          register: ret
+        - name: print cpu info
+          debug:
+            msg: "{{ ret.stdout_lines }}"
+        - name: get memory info
+          command: free --human
+          register: ret
+        - name: print memory info
+          debug:
+            msg: "{{ ret.stdout_lines }}"
+
+    - name: install netdata
+      tags: [netdata]
+      block:
+        - name: download install script
+          get_url:
+            url: https://my-netdata.io/kickstart.sh
+            dest: /tmp/kickstart.sh
+            mode: +x
+        - name: install netdata
+          become: true
+          command: /tmp/kickstart.sh --dont-wait
+
+    - name: configure nginx
+      tags: [nginx]
+      block:
+        - name: copy nginx conf files
+          become: true
+          notify: restart nginx
+          copy:
+            src: "infra/{{ item }}"
+            dest: "{{ item }}"
+            owner: root
+            group: root
+            mode: '0644'
+          loop:
+            - /etc/nginx/nginx.conf
+            - /etc/nginx/sites-enabled/isucari.conf
+        - name: copy nginx systemd unit file
+          become: true
+          notify: restart nginx
+          copy:
+            src: infra/etc/systemd/system/nginx.service
+            dest: /etc/systemd/system/nginx.service
+            owner: root
+            group: root
+            mode: '0644'
+
+    - name: configure mysql
+      tags: [mysql]
+      block:
+        - name: copy mysql conf files
+          become: true
+          notify: restart mysql
+          copy:
+            src: "infra/{{ item }}"
+            dest: "{{ item }}"
+            owner: root
+            group: root
+            mode: '0644'
+          loop:
+            - /etc/mysql/my.cnf
+            - /etc/mysql/conf.d/mysql.cnf
+            - /etc/mysql/mysql.conf.d/mysqld.cnf
+        - name: copy mysql systemd unit file
+          become: true
+          notify: restart mysql
+          copy:
+            src: infra/etc/systemd/system/mysql.service
+            dest: /etc/systemd/system/mysql.service
+            owner: root
+            group: root
+            mode: '0644'
+
+    - name: deploy webapp
+      tags: [webapp, python]
+      block:
+        - name: copy webapp files
+          become: true
+          become_user: isucon
+          notify: restart webapp
+          unarchive:
+            src: build/isucari.zip
+            dest: /home/isucon/isucari/webapp/python
+        - name: pip install
+          become: true
+          become_user: isucon
+          notify: restart webapp
+          pip:
+            executable: /home/isucon/isucari/webapp/python/venv/bin/pip3
+            chdir: /home/isucon/isucari/webapp/python
+            requirements: requirements.txt
+        - name: copy webapp systemd unit file
+          become: true
+          notify: restart webapp
+          copy:
+            src: infra/etc/systemd/system/isucari.python.service
+            dest: /etc/systemd/system/isucari.python.service
+            owner: root
+            group: root
+            mode: '0644'
+
+  handlers:
+    - name: restart nginx
+      become: true
+      systemd:
+        name: nginx.service
+        state: restarted
+        enabled: true
+        daemon_reload: true
+    - name: restart mysql
+      become: true
+      systemd:
+        name: mysql.service
+        state: restarted
+        enabled: true
+        daemon_reload: true
+    - name: restart webapp
+      become: true
+      systemd:
+        name: isucari.python.service
+        state: restarted
+        enabled: true
+        daemon_reload: true

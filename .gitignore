@@ -9,6 +9,9 @@ go.mod
 go.sum
 initial-data
 
+alp.txt
+pt.txt
+
 webapp/public/upload
 webapp/sql/initial.sql
 webapp/perl/local

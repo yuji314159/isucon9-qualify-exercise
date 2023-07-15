@@ -1,0 +1,27 @@
+version: '3'
+
+tasks:
+  build:
+    cmds:
+      - mkdir -p build
+      - cd webapp/python && zip -r ../../build/isucari.zip .
+
+  deploy:
+    deps: [build]
+    cmds:
+      - ansible-playbook --inventory inventory.yml --diff playbook.yml
+
+  nginx-log-reset:
+    cmds:
+      - ssh i1 sudo truncate /var/log/nginx/access.log -s 0
+
+  nginx-log-alp:
+    cmds:
+      - ssh i1 alp --file=/var/log/nginx/access.log json -m '/items/[0-9]+.json,/upload/[0-9a-f]+.jpg,/transactions/[0-9]+.png,/users/[0-9]+.json,/new_items/[0-9]+.json'
+
+  mysql-log-reset:
+    cmds:
+      - ssh i1 sudo truncate /var/log/mysql/slow.log -s 0
+
+  mysql-log-pt:
+      - ssh i1 pt-query-digest /var/log/mysql/slow.log
