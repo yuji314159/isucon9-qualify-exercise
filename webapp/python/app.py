@@ -276,20 +276,6 @@ def get_image_url(image_name):
     return "/upload/{}".format(image_name)
 
 
-def join_map(a):
-    aa = {}
-    for k, v in a.items():
-        kk = k.split('__')
-        if len(kk) == 2:
-            if kk[0] in aa:
-                aa[kk[0]][kk[1]] = v
-            else:
-                aa[kk[0]] = {kk[1]: v}
-        else:
-            aa[k] = v
-    return aa
-
-
 # API
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
@@ -641,7 +627,16 @@ def get_user_items(user_id=None):
     with conn.cursor() as c:
         try:
             if item_id > 0 and created_at > 0:
-                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = """\
+SELECT * FROM items
+JOIN users ON items.seller_id = users.id
+WHERE
+    items.seller_id = %s
+    AND items.status IN (%s, %s, %s)
+    AND (items.created_at < %s OR (items.created_at <= %s AND items.id < %s))
+ORDER BY items.created_at DESC, items.id DESC
+LIMIT %s
+                """
                 c.execute(sql, (
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
@@ -652,9 +647,16 @@ def get_user_items(user_id=None):
                     item_id,
                     Constants.ITEMS_PER_PAGE + 1,
                 ))
-
             else:
-                sql = "SELECT * FROM `items` WHERE `seller_id` = %s AND `status` IN (%s,%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = """\
+SELECT * FROM items
+JOIN users ON items.seller_id = users.id
+WHERE
+    items.seller_id = %s
+    AND items.status IN (%s, %s, %s)
+ORDER BY items.created_at DESC, items.id DESC
+LIMIT %s
+                """
                 c.execute(sql, (
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
@@ -664,17 +666,14 @@ def get_user_items(user_id=None):
                 ))
 
             item_simples = []
-            while True:
-                item = c.fetchone()
-
-                if item is None:
-                    break
-
-                seller = get_user_simple_by_id(item["seller_id"])
-                category = get_category_by_id(item["category_id"])
-
-                item["category"] = category
-                item["seller"] = to_user_json(seller)
+            for item in c:
+                item["category"] = get_category_by_id(item["category_id"])
+                item["seller"] = {
+                    "id": item["users.id"],
+                    "account_name": item["account_name"],
+                    "address": item["address"],
+                    "num_sell_items": item["num_sell_items"],
+                }
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
                 item_simples.append(item)
