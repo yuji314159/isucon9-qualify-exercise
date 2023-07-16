@@ -306,7 +306,7 @@ def post_initialize():
             http_json_error(requests.codes['internal_server_error'], "db error")
 
     return flask.jsonify({
-        "campaign": 2,  # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+        "campaign": 0,  # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
         "language": "python" # 実装言語を返す
     })
 
@@ -520,7 +520,6 @@ SELECT * FROM items
 JOIN users ON items.seller_id = users.id
 WHERE
     (items.seller_id = %s OR items.buyer_id = %s)
-    AND items.status IN (%s, %s, %s, %s, %s)
     AND (items.created_at < %s OR (items.created_at <= %s AND items.id < %s))
 ORDER BY items.created_at DESC, items.id DESC
 LIMIT %s
@@ -528,11 +527,6 @@ LIMIT %s
                 c.execute(sql, (
                     user['id'],
                     user['id'],
-                    Constants.ITEM_STATUS_ON_SALE,
-                    Constants.ITEM_STATUS_TRADING,
-                    Constants.ITEM_STATUS_SOLD_OUT,
-                    Constants.ITEM_STATUS_CANCEL,
-                    Constants.ITEM_STATUS_STOP,
                     datetime.datetime.fromtimestamp(created_at),
                     datetime.datetime.fromtimestamp(created_at),
                     item_id,
@@ -544,18 +538,12 @@ SELECT * FROM items
 JOIN users ON items.seller_id = users.id
 WHERE
     (items.seller_id = %s OR items.buyer_id = %s)
-    AND items.status IN (%s, %s, %s, %s, %s)
 ORDER BY items.created_at DESC, items.id DESC
 LIMIT %s
                 """
                 c.execute(sql, [
                     user['id'],
                     user['id'],
-                    Constants.ITEM_STATUS_ON_SALE,
-                    Constants.ITEM_STATUS_TRADING,
-                    Constants.ITEM_STATUS_SOLD_OUT,
-                    Constants.ITEM_STATUS_CANCEL,
-                    Constants.ITEM_STATUS_STOP,
                     Constants.TRANSACTIONS_PER_PAGE + 1,
                 ])
 
@@ -584,10 +572,9 @@ LIMIT %s
                         if not shipping:
                             http_json_error(requests.codes['not_found'], "shipping not found")
 
-                        ssr = api_shipment_status(get_shipment_service_url(), {"reserve_id": shipping["reserve_id"]})
                         item["transaction_evidence_id"] = transaction_evidence["id"]
                         item["transaction_evidence_status"] = transaction_evidence["status"]
-                        item["shipping_status"] = ssr["status"]
+                        item["shipping_status"] = shipping["status"]
 
         except MySQLdb.Error as err:
             app.logger.exception(err)
@@ -1364,13 +1351,8 @@ def post_login():
             user = c.fetchone()
 
             if user is None or \
-                    (user['password'] != '' and flask.request.json['password'].encode('utf-8') != user['password']) or \
                     not bcrypt.checkpw(flask.request.json['password'].encode('utf-8'), user['hashed_password']):
                 http_json_error(requests.codes['unauthorized'], 'アカウント名かパスワードが間違えています')
-        
-        with conn.cursor() as c:
-            c.execute("UPDATE `users` SET `password` = %s WHERE `account_name` = %s",
-                      [flask.request.json['password'].encode('utf-8'), flask.request.json['account_name']])
     except MySQLdb.Error as err:
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], 'db error')
@@ -1389,8 +1371,8 @@ def post_register():
     try:
         conn = dbh()
         with conn.cursor() as c:
-            sql = "INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `password`) VALUES (%s, %s, %s, %s)"
-            c.execute(sql, [flask.request.json['account_name'], hashedpw, flask.request.json['address'], flask.request.json['password'].encode('utf-8')])
+            sql = "INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (%s, %s, %s)"
+            c.execute(sql, [flask.request.json['account_name'], hashedpw, flask.request.json['address']])
         conn.commit()
         user_id = c.lastrowid
     except MySQLdb.Error as err:

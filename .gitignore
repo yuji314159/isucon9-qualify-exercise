@@ -11,6 +11,7 @@ initial-data
 
 alp.txt
 pt.txt
+build
 
 webapp/public/upload
 webapp/sql/initial.sql
