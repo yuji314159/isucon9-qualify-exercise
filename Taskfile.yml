@@ -18,7 +18,7 @@ tasks:
 
   alp:
     cmds:
-      - ssh i1 alp --file=/var/log/nginx/access.log json -m '/items/[0-9]+.json,/upload/[0-9a-f]+.jpg,/transactions/[0-9]+.png,/users/[0-9]+.json,/new_items/[0-9]+.json' --sort avg -r -q --qs-ignore-values
+      - ssh i1 alp --file=/var/log/nginx/access.log json -m '/items/[0-9]+.json,/upload/[0-9a-z]+.jpg,/transactions/[0-9]+.png,/users/[0-9]+.json,/new_items/[0-9]+.json' --sort avg -r -q --qs-ignore-values
 
   pt:
     cmds:
