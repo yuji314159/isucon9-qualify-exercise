@@ -527,83 +527,20 @@ def get_transactions():
         created_at = int(created_at_str)
 
     with conn.cursor() as c:
-
         try:
-
             if item_id > 0 and created_at > 0:
                 sql = """\
-(
-    SELECT
-        `items`.`id`,
-        `items`.`seller_id`,
-        `items`.`buyer_id`,
-        `items`.`status`,
-        `items`.`name`,
-        `items`.`price`,
-        `items`.`description`,
-        `items`.`image_name`,
-        `items`.`category_id`,
-        `items`.`created_at`,
-        `items`.`updated_at`,
-        `users`.`id` as `seller__id`,
-        `users`.`account_name` as `seller__account_name`,
-        `users`.`address` as `seller__address`,
-        `users`.`num_sell_items` as `seller__num_sell_items`
-    FROM `items`
-    JOIN `users`
-    ON `items`.`seller_id` = `users`.`id`
-    WHERE
-        `items`.`seller_id` = %s
-        AND `items`.`status` IN (%s, %s, %s, %s, %s)
-        AND (
-            `items`.`created_at` < %s
-            OR (`items`.`created_at` <= %s AND `items`.`id` < %s)
-        )
-)
-UNION
-(
-    SELECT
-        `items`.`id`,
-        `items`.`seller_id`,
-        `items`.`buyer_id`,
-        `items`.`status`,
-        `items`.`name`,
-        `items`.`price`,
-        `items`.`description`,
-        `items`.`image_name`,
-        `items`.`category_id`,
-        `items`.`created_at`,
-        `items`.`updated_at`,
-        `users`.`id` as `seller__id`,
-        `users`.`account_name` as `seller__account_name`,
-        `users`.`address` as `seller__address`,
-        `users`.`num_sell_items` as `seller__num_sell_items`
-    FROM `items`
-    JOIN `users`
-    ON `items`.`seller_id` = `users`.`id`
-    WHERE
-        `items`.`buyer_id` = %s
-        AND `items`.`status` IN (%s, %s, %s, %s, %s)
-        AND (
-            `items`.`created_at` < %s
-            OR (`items`.`created_at` <= %s AND `items`.`id` < %s)
-        )
-)
-ORDER BY
-    `created_at` DESC,
-    `id` DESC
+SELECT * FROM items
+JOIN users ON items.seller_id = users.id
+WHERE
+    (items.seller_id = %s OR items.buyer_id = %s)
+    AND items.status IN (%s, %s, %s, %s, %s)
+    AND (items.created_at < %s OR (items.created_at <= %s AND items.id < %s))
+ORDER BY items.created_at DESC, items.id DESC
 LIMIT %s
                 """
                 c.execute(sql, (
                     user['id'],
-                    Constants.ITEM_STATUS_ON_SALE,
-                    Constants.ITEM_STATUS_TRADING,
-                    Constants.ITEM_STATUS_SOLD_OUT,
-                    Constants.ITEM_STATUS_CANCEL,
-                    Constants.ITEM_STATUS_STOP,
-                    datetime.datetime.fromtimestamp(created_at),
-                    datetime.datetime.fromtimestamp(created_at),
-                    item_id,
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
@@ -615,70 +552,18 @@ LIMIT %s
                     item_id,
                     Constants.TRANSACTIONS_PER_PAGE + 1,
                 ))
-
             else:
                 sql = """\
-(
-    SELECT
-        `items`.`id`,
-        `items`.`seller_id`,
-        `items`.`buyer_id`,
-        `items`.`status`,
-        `items`.`name`,
-        `items`.`price`,
-        `items`.`description`,
-        `items`.`image_name`,
-        `items`.`category_id`,
-        `items`.`created_at`,
-        `items`.`updated_at`,
-        `users`.`id` as `seller__id`,
-        `users`.`account_name` as `seller__account_name`,
-        `users`.`address` as `seller__address`,
-        `users`.`num_sell_items` as `seller__num_sell_items`
-    FROM `items`
-    JOIN `users`
-    ON `items`.`seller_id` = `users`.`id`
-    WHERE
-        `items`.`seller_id` = %s
-        AND `items`.`status` IN (%s, %s, %s, %s, %s)
-)
-UNION
-(
-    SELECT
-        `items`.`id`,
-        `items`.`seller_id`,
-        `items`.`buyer_id`,
-        `items`.`status`,
-        `items`.`name`,
-        `items`.`price`,
-        `items`.`description`,
-        `items`.`image_name`,
-        `items`.`category_id`,
-        `items`.`created_at`,
-        `items`.`updated_at`,
-        `users`.`id` as `seller__id`,
-        `users`.`account_name` as `seller__account_name`,
-        `users`.`address` as `seller__address`,
-        `users`.`num_sell_items` as `seller__num_sell_items`
-    FROM `items`
-    JOIN `users`
-    ON `items`.`seller_id` = `users`.`id`
-    WHERE
-        `items`.`buyer_id` = %s
-        AND `items`.`status` IN (%s, %s, %s, %s, %s)
-)
-ORDER BY
-    `created_at` DESC,
-    `id` DESC
+SELECT * FROM items
+JOIN users ON items.seller_id = users.id
+WHERE
+    (items.seller_id = %s OR items.buyer_id = %s)
+    AND items.status IN (%s, %s, %s, %s, %s)
+ORDER BY items.created_at DESC, items.id DESC
 LIMIT %s
                 """
                 c.execute(sql, [
                     user['id'],
-                    Constants.ITEM_STATUS_ON_SALE,
-                    Constants.ITEM_STATUS_TRADING,
-                    Constants.ITEM_STATUS_SOLD_OUT,
-                    Constants.ITEM_STATUS_CANCEL,
-                    Constants.ITEM_STATUS_STOP,
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
@@ -689,24 +574,22 @@ LIMIT %s
                 ])
 
             item_details = []
-            while True:
-                item = c.fetchone()
-
-                if item is None:
-                    break
-
-                item = join_map(item)
+            for item in c:
                 item["category"] = get_category_by_id(item["category_id"])
+                item["seller"] = {
+                    "id": item["users.id"],
+                    "account_name": item["account_name"],
+                    "address": item["address"],
+                    "num_sell_items": item["num_sell_items"],
+                }
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=False)
-
                 item_details.append(item)
 
                 with conn.cursor() as c2:
                     sql = "SELECT * FROM `transaction_evidences` WHERE `item_id` = %s"
                     c2.execute(sql, [item['id']])
                     transaction_evidence = c2.fetchone()
-
 
                     if transaction_evidence:
                         sql = "SELECT * FROM `shippings` WHERE `transaction_evidence_id` = %s"
