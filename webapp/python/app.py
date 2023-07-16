@@ -701,17 +701,23 @@ def get_item(item_id=None):
 
     with conn.cursor() as c:
         try:
-            sql = "SELECT * FROM `items` WHERE `id` = %s"
+            sql = """\
+SELECT * FROM items
+JOIN users ON items.seller_id = users.id
+WHERE items.id = %s
+            """
             c.execute(sql, (item_id,))
             item = c.fetchone()
             if item is None:
                 http_json_error(requests.codes['not_found'], "item not found")
 
-            seller = get_user_simple_by_id(item["seller_id"])
-            category = get_category_by_id(item["category_id"])
-
-            item["category"] = category
-            item["seller"] = to_user_json(seller)
+            item["category"] = get_category_by_id(item["category_id"])
+            item["seller"] = {
+                "id": item["users.id"],
+                "account_name": item["account_name"],
+                "address": item["address"],
+                "num_sell_items": item["num_sell_items"],
+            }
             item["image_url"] = get_image_url(item["image_name"])
             item = to_item_json(item, simple=False)
 
