@@ -149,17 +149,52 @@ def get_user_simple_by_id(user_id):
 
 
 def get_category_by_id(category_id):
-    conn = dbh()
-    sql = "SELECT * FROM `categories` WHERE `id` = %s"
-    with conn.cursor() as c:
-        c.execute(sql, (category_id,))
-        category = c.fetchone()
-        # TODO: check err
-    if category['parent_id'] != 0:
-        parent = get_category_by_id(category['parent_id'])
-        if parent is not None:
-            category['parent_category_name'] = parent['category_name']
-    return category
+    categories = {
+        1: {"id": 1, "parent_id": 0, "category_name": "ソファー"},
+        2: {"id": 2, "parent_id": 1, "parent_category_name": "ソファー", "category_name": "一人掛けソファー"},
+        3: {"id": 3, "parent_id": 1, "parent_category_name": "ソファー", "category_name": "二人掛けソファー"},
+        4: {"id": 4, "parent_id": 1, "parent_category_name": "ソファー", "category_name": "コーナーソファー"},
+        5: {"id": 5, "parent_id": 1, "parent_category_name": "ソファー", "category_name": "二段ソファー"},
+        6: {"id": 6, "parent_id": 1, "parent_category_name": "ソファー", "category_name": "ソファーベッド"},
+        10: {"id": 10, "parent_id": 0, "category_name": "家庭用チェア"},
+        11: {"id": 11, "parent_id": 10, "parent_category_name": "家庭用チェア", "category_name": "スツール"},
+        12: {"id": 12, "parent_id": 10, "parent_category_name": "家庭用チェア", "category_name": "クッションスツール"},
+        13: {"id": 13, "parent_id": 10, "parent_category_name": "家庭用チェア", "category_name": "ダイニングチェア"},
+        14: {"id": 14, "parent_id": 10, "parent_category_name": "家庭用チェア", "category_name": "リビングチェア"},
+        15: {"id": 15, "parent_id": 10, "parent_category_name": "家庭用チェア", "category_name": "カウンターチェア"},
+        20: {"id": 20, "parent_id": 0, "category_name": "キッズチェア"},
+        21: {"id": 21, "parent_id": 20, "parent_category_name": "キッズチェア", "category_name": "学習チェア"},
+        22: {"id": 22, "parent_id": 20, "parent_category_name": "キッズチェア", "category_name": "ベビーソファ"},
+        23: {"id": 23, "parent_id": 20, "parent_category_name": "キッズチェア", "category_name": "キッズハイチェア"},
+        24: {"id": 24, "parent_id": 20, "parent_category_name": "キッズチェア", "category_name": "テーブルチェア"},
+        30: {"id": 30, "parent_id": 0, "category_name": "オフィスチェア"},
+        31: {"id": 31, "parent_id": 30, "parent_category_name": "オフィスチェア", "category_name": "デスクチェア"},
+        32: {"id": 32, "parent_id": 30, "parent_category_name": "オフィスチェア", "category_name": "ビジネスチェア"},
+        33: {"id": 33, "parent_id": 30, "parent_category_name": "オフィスチェア", "category_name": "回転チェア"},
+        34: {"id": 34, "parent_id": 30, "parent_category_name": "オフィスチェア", "category_name": "リクライニングチェア"},
+        35: {"id": 35, "parent_id": 30, "parent_category_name": "オフィスチェア", "category_name": "投擲用椅子"},
+        40: {"id": 40, "parent_id": 0, "category_name": "折りたたみ椅子"},
+        41: {"id": 41, "parent_id": 40, "parent_category_name": "折りたたみ椅子", "category_name": "パイプ椅子"},
+        42: {"id": 42, "parent_id": 40, "parent_category_name": "折りたたみ椅子", "category_name": "木製折りたたみ椅子"},
+        43: {"id": 43, "parent_id": 40, "parent_category_name": "折りたたみ椅子", "category_name": "キッチンチェア"},
+        44: {"id": 44, "parent_id": 40, "parent_category_name": "折りたたみ椅子", "category_name": "アウトドアチェア"},
+        45: {"id": 45, "parent_id": 40, "parent_category_name": "折りたたみ椅子", "category_name": "作業椅子"},
+        50: {"id": 50, "parent_id": 0, "category_name": "ベンチ"},
+        51: {"id": 51, "parent_id": 50, "parent_category_name": "ベンチ", "category_name": "一人掛けベンチ"},
+        52: {"id": 52, "parent_id": 50, "parent_category_name": "ベンチ", "category_name": "二人掛けベンチ"},
+        53: {"id": 53, "parent_id": 50, "parent_category_name": "ベンチ", "category_name": "アウトドア用ベンチ"},
+        54: {"id": 54, "parent_id": 50, "parent_category_name": "ベンチ", "category_name": "収納付きベンチ"},
+        55: {"id": 55, "parent_id": 50, "parent_category_name": "ベンチ", "category_name": "背もたれ付きベンチ"},
+        56: {"id": 56, "parent_id": 50, "parent_category_name": "ベンチ", "category_name": "ベンチマーク"},
+        60: {"id": 60, "parent_id": 0, "category_name": "座椅子"},
+        61: {"id": 61, "parent_id": 60, "parent_category_name": "座椅子", "category_name": "和風座椅子"},
+        62: {"id": 62, "parent_id": 60, "parent_category_name": "座椅子", "category_name": "高座椅子"},
+        63: {"id": 63, "parent_id": 60, "parent_category_name": "座椅子", "category_name": "ゲーミング座椅子"},
+        64: {"id": 64, "parent_id": 60, "parent_category_name": "座椅子", "category_name": "ロッキングチェア"},
+        65: {"id": 65, "parent_id": 60, "parent_category_name": "座椅子", "category_name": "座布団"},
+        66: {"id": 66, "parent_id": 60, "parent_category_name": "座椅子", "category_name": "空気椅子"},
+    }
+    return categories[int(category_id)]
 
 
 def to_user_json(user):
@@ -234,6 +269,21 @@ def api_shipment_status(shipment_url, params={}):
 def get_image_url(image_name):
     return "/upload/{}".format(image_name)
 
+
+def join_map(a):
+    aa = {}
+    for k, v in a.items():
+        kk = k.split('__')
+        if len(kk) == 2:
+            if kk[0] in aa:
+                aa[kk[0]][kk[1]] = v
+            else:
+                aa[kk[0]] = {kk[1]: v}
+        else:
+            aa[k] = v
+    return aa
+
+
 # API
 @app.route("/initialize", methods=["POST"])
 def post_initialize():
@@ -264,7 +314,7 @@ def post_initialize():
             http_json_error(requests.codes['internal_server_error'], "db error")
 
     return flask.jsonify({
-        "campaign": 0,  # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
+        "campaign": 2,  # キャンペーン実施時には還元率の設定を返す。詳しくはマニュアルを参照のこと。
         "language": "python" # 実装言語を返す
     })
 
@@ -288,14 +338,20 @@ def get_new_items():
             http_json_error(requests.codes['bad_request'], "created_at param error")
         created_at = int(created_at_str)
 
-    items = []
-
     try:
         conn = dbh()
         with conn.cursor() as c:
             if item_id > 0 and created_at > 0:
                 # paging
-                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = """\
+SELECT * FROM items
+JOIN users ON items.seller_id = users.id
+WHERE
+    items.status IN (%s, %s)
+    AND (items.created_at < %s OR (items.created_at <= %s AND items.id < %s))
+ORDER BY items.created_at DESC, items.id DESC
+LIMIT %s
+                """
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
@@ -306,7 +362,13 @@ def get_new_items():
                 ))
             else:
                 # 1st page
-                sql = "SELECT * FROM `items` WHERE `status` IN (%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = """\
+SELECT * FROM items
+JOIN users ON items.seller_id = users.id
+WHERE items.status IN (%s, %s)
+ORDER BY items.created_at DESC, items.id DESC
+LIMIT %s
+                """
                 c.execute(sql, (
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_SOLD_OUT,
@@ -315,17 +377,14 @@ def get_new_items():
 
             item_simples = []
 
-            while True:
-                item = c.fetchone()
-
-                if item is None:
-                    break
-
-                seller = get_user_simple_by_id(item["seller_id"])
-                category = get_category_by_id(item["category_id"])
-
-                item["category"] = category
-                item["seller"] = to_user_json(seller)
+            for item in c:
+                item["category"] = get_category_by_id(item["category_id"])
+                item["seller"] = {
+                    "id": item["users.id"],
+                    "account_name": item["account_name"],
+                    "address": item["address"],
+                    "num_sell_items": item["num_sell_items"],
+                }
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=True)
 
@@ -461,9 +520,79 @@ def get_transactions():
         try:
 
             if item_id > 0 and created_at > 0:
-                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s) AND `status` IN (%s,%s,%s,%s,%s) AND (`created_at` < %s OR (`created_at` <= %s AND `id` < %s)) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = """\
+(
+    SELECT
+        `items`.`id`,
+        `items`.`seller_id`,
+        `items`.`buyer_id`,
+        `items`.`status`,
+        `items`.`name`,
+        `items`.`price`,
+        `items`.`description`,
+        `items`.`image_name`,
+        `items`.`category_id`,
+        `items`.`created_at`,
+        `items`.`updated_at`,
+        `users`.`id` as `seller__id`,
+        `users`.`account_name` as `seller__account_name`,
+        `users`.`address` as `seller__address`,
+        `users`.`num_sell_items` as `seller__num_sell_items`
+    FROM `items`
+    JOIN `users`
+    ON `items`.`seller_id` = `users`.`id`
+    WHERE
+        `items`.`seller_id` = %s
+        AND `items`.`status` IN (%s, %s, %s, %s, %s)
+        AND (
+            `items`.`created_at` < %s
+            OR (`items`.`created_at` <= %s AND `items`.`id` < %s)
+        )
+)
+UNION
+(
+    SELECT
+        `items`.`id`,
+        `items`.`seller_id`,
+        `items`.`buyer_id`,
+        `items`.`status`,
+        `items`.`name`,
+        `items`.`price`,
+        `items`.`description`,
+        `items`.`image_name`,
+        `items`.`category_id`,
+        `items`.`created_at`,
+        `items`.`updated_at`,
+        `users`.`id` as `seller__id`,
+        `users`.`account_name` as `seller__account_name`,
+        `users`.`address` as `seller__address`,
+        `users`.`num_sell_items` as `seller__num_sell_items`
+    FROM `items`
+    JOIN `users`
+    ON `items`.`seller_id` = `users`.`id`
+    WHERE
+        `items`.`buyer_id` = %s
+        AND `items`.`status` IN (%s, %s, %s, %s, %s)
+        AND (
+            `items`.`created_at` < %s
+            OR (`items`.`created_at` <= %s AND `items`.`id` < %s)
+        )
+)
+ORDER BY
+    `created_at` DESC,
+    `id` DESC
+LIMIT %s
+                """
                 c.execute(sql, (
                     user['id'],
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_TRADING,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.ITEM_STATUS_CANCEL,
+                    Constants.ITEM_STATUS_STOP,
+                    datetime.datetime.fromtimestamp(created_at),
+                    datetime.datetime.fromtimestamp(created_at),
+                    item_id,
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
@@ -477,9 +606,68 @@ def get_transactions():
                 ))
 
             else:
-                sql = "SELECT * FROM `items` WHERE (`seller_id` = %s OR `buyer_id` = %s ) AND `status` IN (%s,%s,%s,%s,%s) ORDER BY `created_at` DESC, `id` DESC LIMIT %s"
+                sql = """\
+(
+    SELECT
+        `items`.`id`,
+        `items`.`seller_id`,
+        `items`.`buyer_id`,
+        `items`.`status`,
+        `items`.`name`,
+        `items`.`price`,
+        `items`.`description`,
+        `items`.`image_name`,
+        `items`.`category_id`,
+        `items`.`created_at`,
+        `items`.`updated_at`,
+        `users`.`id` as `seller__id`,
+        `users`.`account_name` as `seller__account_name`,
+        `users`.`address` as `seller__address`,
+        `users`.`num_sell_items` as `seller__num_sell_items`
+    FROM `items`
+    JOIN `users`
+    ON `items`.`seller_id` = `users`.`id`
+    WHERE
+        `items`.`seller_id` = %s
+        AND `items`.`status` IN (%s, %s, %s, %s, %s)
+)
+UNION
+(
+    SELECT
+        `items`.`id`,
+        `items`.`seller_id`,
+        `items`.`buyer_id`,
+        `items`.`status`,
+        `items`.`name`,
+        `items`.`price`,
+        `items`.`description`,
+        `items`.`image_name`,
+        `items`.`category_id`,
+        `items`.`created_at`,
+        `items`.`updated_at`,
+        `users`.`id` as `seller__id`,
+        `users`.`account_name` as `seller__account_name`,
+        `users`.`address` as `seller__address`,
+        `users`.`num_sell_items` as `seller__num_sell_items`
+    FROM `items`
+    JOIN `users`
+    ON `items`.`seller_id` = `users`.`id`
+    WHERE
+        `items`.`buyer_id` = %s
+        AND `items`.`status` IN (%s, %s, %s, %s, %s)
+)
+ORDER BY
+    `created_at` DESC,
+    `id` DESC
+LIMIT %s
+                """
                 c.execute(sql, [
                     user['id'],
+                    Constants.ITEM_STATUS_ON_SALE,
+                    Constants.ITEM_STATUS_TRADING,
+                    Constants.ITEM_STATUS_SOLD_OUT,
+                    Constants.ITEM_STATUS_CANCEL,
+                    Constants.ITEM_STATUS_STOP,
                     user['id'],
                     Constants.ITEM_STATUS_ON_SALE,
                     Constants.ITEM_STATUS_TRADING,
@@ -496,11 +684,8 @@ def get_transactions():
                 if item is None:
                     break
 
-                seller = get_user_simple_by_id(item["seller_id"])
-                category = get_category_by_id(item["category_id"])
-
-                item["category"] = category
-                item["seller"] = to_user_json(seller)
+                item = join_map(item)
+                item["category"] = get_category_by_id(item["category_id"])
                 item["image_url"] = get_image_url(item["image_name"])
                 item = to_item_json(item, simple=False)
 
@@ -1280,8 +1465,13 @@ def post_login():
             user = c.fetchone()
 
             if user is None or \
+                    (user['password'] != '' and flask.request.json['password'].encode('utf-8') != user['password']) or \
                     not bcrypt.checkpw(flask.request.json['password'].encode('utf-8'), user['hashed_password']):
                 http_json_error(requests.codes['unauthorized'], 'アカウント名かパスワードが間違えています')
+        
+        with conn.cursor() as c:
+            c.execute("UPDATE `users` SET `password` = %s WHERE `account_name` = %s",
+                      [flask.request.json['password'].encode('utf-8'), flask.request.json['account_name']])
     except MySQLdb.Error as err:
         app.logger.exception(err)
         http_json_error(requests.codes['internal_server_error'], 'db error')
@@ -1296,12 +1486,12 @@ def post_login():
 @app.route("/register", methods=["POST"])
 def post_register():
     ensure_required_payload(['account_name', 'password', 'address'])
-    hashedpw = bcrypt.hashpw(flask.request.json['password'].encode('utf-8'), bcrypt.gensalt(10))
+    hashedpw = bcrypt.hashpw(flask.request.json['password'].encode('utf-8'), bcrypt.gensalt(4))
     try:
         conn = dbh()
         with conn.cursor() as c:
-            sql = "INSERT INTO `users` (`account_name`, `hashed_password`, `address`) VALUES (%s, %s, %s)"
-            c.execute(sql, [flask.request.json['account_name'], hashedpw, flask.request.json['address']])
+            sql = "INSERT INTO `users` (`account_name`, `hashed_password`, `address`, `password`) VALUES (%s, %s, %s, %s)"
+            c.execute(sql, [flask.request.json['account_name'], hashedpw, flask.request.json['address'], flask.request.json['password'].encode('utf-8')])
         conn.commit()
         user_id = c.lastrowid
     except MySQLdb.Error as err:

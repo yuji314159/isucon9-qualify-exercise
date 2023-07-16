@@ -114,6 +114,16 @@
             group: root
             mode: '0644'
 
+    - name: deploy sql
+      tags: [sql]
+      block:
+        - name: copy sql schema file
+          become: true
+          become_user: isucon
+          copy:
+            src: webapp/sql/01_schema.sql
+            dest: /home/isucon/isucari/webapp/sql/01_schema.sql
+
   handlers:
     - name: restart nginx
       become: true
